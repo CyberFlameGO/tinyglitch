@@ -34,6 +34,7 @@ const AVBufferedReader = struct {
     }
 
     fn seek(c_self: ?*c_void, offset: i64, whence: c_int) callconv(.C) i64 {
+        _ = whence;
         var self = @intToPtr(*AVBufferedReader, @ptrToInt(c_self));
         if (whence == av.AVSEEK_SIZE) {
             return @intCast(i64, self.data.len);
@@ -70,6 +71,7 @@ const AVBufferedWriter = struct {
     }
 
     fn seek(c_self: ?*c_void, offset: i64, whence: c_int) callconv(.C) i64 {
+        _ = whence;
         var self = @intToPtr(*AVBufferedWriter, @ptrToInt(c_self));
         self.pos = @intCast(usize, offset);
         return offset;
@@ -91,6 +93,9 @@ fn avAlloc(
     len_align: u29,
     ret_addr: usize,
 ) Allocator.Error![]u8 {
+    _ = self;
+    _ = ret_addr;
+    _ = len_align;
     std.debug.assert(ptr_align <= @alignOf(std.c.max_align_t));
     const ptr = @ptrCast([*]u8, av.av_malloc(len) orelse return error.OutOfMemory);
     return ptr[0..len];
@@ -104,6 +109,9 @@ fn avResize(
     len_align: u29,
     ret_addr: usize,
 ) Allocator.Error!usize {
+    _ = self;
+    _ = ret_addr;
+    _ = old_align;
     if (new_len == 0) {
         av.av_free(buf.ptr);
         return 0;
@@ -210,7 +218,7 @@ fn start() !void {
     i = 0;
     const video_stream_idx = video_stream_idx: {
         while (i < nb_streams) : (i += 1) {
-            if (@enumToInt(format_ctx.*.streams[i].*.codec.*.codec_type) == av.AVMEDIA_TYPE_VIDEO) {
+            if (format_ctx.*.streams[i].*.codec.*.codec_type == av.AVMEDIA_TYPE_VIDEO) {
                 break :video_stream_idx i;
             }
         }
